@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Shin Iryuu</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --header-bg: #13161e;
+    --card: #181c26;
+    --border: #1e2333;
+    --input-bg: #1a1f2e;
+    --text: #dde3f0;
+    --muted: #5a637a;
+    --user-bubble: #1a5aff;
+    --user-bubble-text: #ffffff;
+    --ai-bubble: #1a1f2e;
+    --ai-bubble-text: #dde3f0;
+    --primary: #1a5aff;
+    --green: #22c55e;
+    --font: system-ui, -apple-system, sans-serif;
+  }
+
+  html, body {
+    height: 100%; width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--bg);
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  #header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .avatar-wrap { position: relative; flex-shrink: 0; }
+  .avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e2333, #13161e);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    border: 1px solid var(--border);
+  }
+  .status-dot {
+    position: absolute; bottom: 1px; right: 1px;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: var(--green);
+    border: 2px solid var(--header-bg);
+  }
+
+  .header-info { flex: 1; min-width: 0; }
+  .header-name { font-size: 14px; font-weight: 600; }
+  .header-status { font-size: 11px; color: var(--green); }
+
+  /* NOTICE */
+  #notice {
+    padding: 6px 16px;
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* MESSAGES */
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    scroll-behavior: smooth;
+  }
+  #messages::-webkit-scrollbar { display: none; }
+  #messages { scrollbar-width: none; }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    opacity: 0.45;
+    margin: auto;
+  }
+  .empty-avatar {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e2333, #13161e);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    border: 1px solid var(--border);
+  }
+  .empty-state p { font-size: 13px; color: var(--muted); }
+
+  .msg-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 7px;
+    animation: fadeUp 0.2s ease;
+  }
+  .msg-row.user { justify-content: flex-end; }
+  .msg-row.ai  { justify-content: flex-start; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e2333, #13161e);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    border: 1px solid var(--border);
+  }
+
+  .user-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(26,90,255,0.18);
+    border: 1px solid rgba(26,90,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    color: #a0b4ff;
+  }
+
+  .msg-col { display: flex; flex-direction: column; gap: 2px; max-width: 74%; }
+  .msg-col.user { align-items: flex-end; }
+  .msg-col.ai   { align-items: flex-start; }
+
+  .bubble {
+    padding: 10px 14px;
+    font-size: 14px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .bubble.user {
+    background: var(--user-bubble);
+    color: var(--user-bubble-text);
+    border-radius: 18px 18px 4px 18px;
+  }
+  .bubble.ai {
+    background: var(--ai-bubble);
+    color: var(--ai-bubble-text);
+    border-radius: 18px 18px 18px 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* Image bubble */
+  .image-bubble img {
+    max-width: 200px;
+    border-radius: 12px;
+    display: block;
+  }
+
+  .msg-time {
+    font-size: 10px;
+    color: var(--muted);
+    padding: 0 4px;
+    opacity: 0.65;
+  }
+
+  /* INPUT */
+  #footer {
+    padding: 10px 12px;
+    background: var(--header-bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #input {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 11px 18px;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+  }
+
+  /* Upload button */
+  .upload-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+  }
+
+  #send-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #send-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: white;
+    fill: none;
+    stroke-width: 2;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="header">
+    <div class="avatar-wrap">
+      <div class="avatar">🌸</div>
+      <div class="status-dot"></div>
+    </div>
+    <div class="header-info">
+      <div class="header-name">Shin Iryuu</div>
+      <div class="header-status">Online</div>
+    </div>
+  </div>
+
+  <div id="notice">Remember: Everything Characters say is made up!</div>
+
+  <div id="messages">
+    <div class="empty-state" id="empty">
+      <div class="empty-avatar">🌸</div>
+      <p>Say hi to Shin Iryuu!</p>
+    </div>
+  </div>
+
+  <div id="footer">
+    <input id="input" type="text" placeholder="Message Shin Iryuu" autocomplete="off" />
+    
+    <!-- Image Upload -->
+    <label for="imageInput" class="upload-btn">📷</label>
+    <input type="file" id="imageInput" accept="image/*" hidden />
+
+    <!-- Send Button -->
+    <button id="send-btn" disabled aria-label="Send">
+      <svg viewBox="0 0 24 24">
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+  const API = '/api';
+  const msgList = document.getElementById('messages');
+  const input   = document.getElementById('input');
+  const sendBtn = document.getElementById('send-btn');
+  const imageInput = document.getElementById('imageInput');
+  let loading = false;
+
+  function fmt(d) {
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function scrollBottom() {
+    msgList.scrollTop = msgList.scrollHeight;
+  }
+
+  function addMessage(role, text) {
+    const emp = document.getElementById('empty');
+    if (emp) emp.remove();
+
+    const row = document.createElement('div');
+    row.className = 'msg-row ' + role;
+
+    if (role === 'ai') {
+      const av = document.createElement('div');
+      av.className = 'msg-avatar';
+      av.textContent = '🌸';
+      row.appendChild(av);
+    }
+
+    const col = document.createElement('div');
+    col.className = 'msg-col ' + role;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + role;
+    bubble.textContent = text;
+
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = fmt(new Date());
+
+    col.appendChild(bubble);
+    col.appendChild(time);
+    row.appendChild(col);
+
+    if (role === 'user') {
+      const av = document.createElement('div');
+      av.className = 'user-avatar';
+      av.textContent = 'Y';
+      row.appendChild(av);
+    }
+
+    msgList.appendChild(row);
+    scrollBottom();
+  }
+
+  function addImageMessage(role, imageUrl) {
+    const emp = document.getElementById('empty');
+    if (emp) emp.remove();
+
+    const row = document.createElement('div');
+    row.className = 'msg-row ' + role;
+
+    if (role === 'ai') {
+      const av = document.createElement('div');
+      av.className = 'msg-avatar';
+      av.textContent = '🌸';
+      row.appendChild(av);
+    }
+
+    const col = document.createElement('div');
+    col.className = 'msg-col ' + role;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + role + ' image-bubble';
+
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    bubble.appendChild(img);
+
+    const time = document.createElement('div');
+    time.className = 'msg-time';
+    time.textContent = fmt(new Date());
+
+    col.appendChild(bubble);
+    col.appendChild(time);
+    row.appendChild(col);
+
+    if (role === 'user') {
+      const av = document.createElement('div');
+      av.className = 'user-avatar';
+      av.textContent = 'Y';
+      row.appendChild(av);
+    }
+
+    msgList.appendChild(row);
+    scrollBottom();
+  }
+
+  async function send() {
+    const text = input.value.trim();
+    if (!text || loading) return;
+
+    loading = true;
+    input.value = '';
+    sendBtn.disabled = true;
+    input.disabled = true;
+
+    addMessage('user', text);
+
+    try {
+      const res = await fetch(`${API}?p=${encodeURIComponent(text)}`);
+      const data = await res.json();
+      addMessage('ai', data?.message || 'No response');
+    } catch {
+      addMessage('ai', '⚠️ Failed to connect to the server.');
+    } finally {
+      loading = false;
+      input.disabled = false;
+      sendBtn.disabled = !input.value.trim();
+      input.focus();
+    }
+  }
+
+  // Handle image upload
+  imageInput.addEventListener('change', () => {
+    const file = imageInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64Image = reader.result;
+
+      // Show user preview
+      addImageMessage('user', base64Image);
+
+      try {
+        const res = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64Image })
+        });
+
+        const data = await res.json();
+        if (data.status === 'success') {
+          addImageMessage('ai', data.imageUrl);
+        } else {
+          addMessage('ai', 'Image upload failed.');
+        }
+      } catch {
+        addMessage('ai', '⚠️ Image upload failed.');
+      }
+    };
+
+    reader.readAsDataURL(file);
+    imageInput.value = '';
+  });
+
+  input.addEventListener('input', () => {
+    sendBtn.disabled = !input.value.trim() || loading;
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      send();
+    }
+  });
+
+  sendBtn.addEventListener('click', send);
+  input.focus();
+</script>
+</body>
+</html>
