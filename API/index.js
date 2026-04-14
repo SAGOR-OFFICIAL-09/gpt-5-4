@@ -1,8 +1,8 @@
-// index.js
+// api/index.js
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '10mb' // Allow image uploads
+      sizeLimit: '10mb' // Allow Base64 image uploads
     }
   }
 };
@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // 🔹 Chat API (GET)
+  // 🔹 Chat API
   if (req.method === "GET") {
     const { p } = req.query;
 
@@ -33,6 +33,10 @@ export default async function handler(req, res) {
         `https://sagor.nav.bd/sagor/gpt5-4?p=${encodeURIComponent(p)}`
       );
 
+      if (!response.ok) {
+        throw new Error(`Upstream error: ${response.status}`);
+      }
+
       const data = await response.json();
       return res.status(200).json(data);
     } catch (error) {
@@ -43,7 +47,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // 🔹 Image Upload API (POST)
+  // 🔹 Image Upload API (Base64)
   if (req.method === "POST") {
     const { image } = req.body;
 
@@ -54,7 +58,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Simply return the Base64 image
+    // Return the Base64 image directly
     return res.status(200).json({
       status: "success",
       imageUrl: image
